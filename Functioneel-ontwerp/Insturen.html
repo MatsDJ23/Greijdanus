@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Website Informatica</title>
+    <link href="style.css" rel="stylesheet" type="text/css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+</head>
+
+<body>
+    <div class="header">
+
+		<h1>Code insturen</h1>
+
+    </div>
+
+  <div class="Insturen600px">  
+  <div class="px600">
+    <div class="navbar">
+
+      <div class="dropdown1">
+        <button class="dropbtn"><p><b>Films</b></p></button>
+        <div class="dropdown-content1">
+          <a href="Film1.html">Film 1</a>
+          <a href="Film2.html">Film 2</a>
+        </div>
+      </div>
+
+      <div class="dropdown2">  
+        <button class="dropbtn"><p><b>Contact</b></p></button>
+        <div class="dropdown-content2">
+          <a href="E-mail.html">Gegevens</a>
+          <a href="Review.html">Review</a>
+        </div>
+      </div>
+
+        <div class="dropbtn"> <p> <a href="Home.html"> <b>Home</b> </a> </p> </div>
+
+      <div class="dropdown3">  
+        <button class="dropbtn"><p><b>Coderen</b></p></button>
+        <div class="dropdown-content3">
+          <a href="Coderen.html">Coderen</a>
+          <a href="Insturen.html">Insturen</a>
+        </div>
+      </div>
+
+      <div class="dropdown4">  
+        <button class="dropbtn"><p><b>Games</b></p></button>
+        <div class="dropdown-content4">
+          <a href="Pong.html">Pong!</a>
+        </div>
+      </div>
+    </div>
+  </div>
+      
+  <div class="px600">
+
+    <div class="gegevens">
+      <textarea id="Naam" class="Naam" placeholder="Naam"></textarea>
+      <p id="mandatory" class="mandatory"></p>
+
+      <textarea id="Achternaam" class="Achternaam" placeholder="Achternaam"></textarea>
+
+      <textarea id="Mail" class="Mail" placeholder="E-mail"></textarea>
+      <p id="mandatory1" class="mandatory"></p>
+
+      <textarea id="Upload" class="Upload" placeholder="Upload hier jouw code..."></textarea>
+      <p id="mandatory2" class="mandatory"></p>
+
+      <button class="sendbutton" id="sendbutton" onclick="send()"><b>Send</b></button>
+      <p id="verzonden" class="verzonden"></p>
+  </div>
+
+<script>
+    function send() {
+      const Naam = document.getElementById("Naam");
+      const Mail = document.getElementById("Mail");
+      const Upload = document.getElementById("Upload");
+
+      let isValid = true;
+
+      if (Naam.value.trim() === "") {
+          document.getElementById("mandatory").innerHTML = "Dit veld is verplicht*";
+          isValid = false;
+      } else {
+          document.getElementById("mandatory").innerHTML = "";
+      }
+
+      if (Mail.value.trim() === "") {
+          document.getElementById("mandatory1").innerHTML = "Dit veld is verplicht*";
+          isValid = false;
+      } else {
+          document.getElementById("mandatory1").innerHTML = "";
+      }
+
+      if (Upload.value.trim() === "") {
+          document.getElementById("mandatory2").innerHTML = "Dit veld is verplicht*";
+          isValid = false;
+      } else {
+          document.getElementById("mandatory2").innerHTML = "";
+      }
+
+      if (isValid) {
+          document.getElementById("verzonden").innerHTML = "Jouw code is succesvol verzonden!";
+      } else {
+          document.getElementById("verzonden").innerHTML = "";
+      }
+  }
+</script>
+</div>
+</div>
+
+    <div class="footer2">
+      <div class="sturen">
+        <p>Als jij je code wilt uploaden om feedback te krijgen kan je dat hier benenden doen,
+           Je kan jou code in het grote vak zetten je E-mail en naam invullen en hem dan versturen.<br>
+           We proberen iedereen binnen 2 dagen een reactie terug te geven.<br>
+        </p>
+      </div>
+    </div>
+
+</body>
+</html>

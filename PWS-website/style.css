@@ -1,0 +1,222 @@
+body {
+  background-color: white;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  font-family: cursive;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+ul li {
+  float: left;
+}
+
+h1 {
+  color: black;
+  border: 2px solid black;
+  border-radius: 12px;
+  padding: 10px;
+  margin: 50px;
+  background-color: LightGreen;
+}
+
+.voetje {
+  margin-top: auto;
+  background-color: #3CB371;
+  padding: 1px;
+  text-align: center;
+  color: black;
+}
+
+.navibari {
+  display: flex;
+  justify-content: center;
+  background-color: #3CB371;
+  position: sticky; 
+  top: 0; 
+  z-index: 1000;
+}
+
+.knop {
+  display: block;
+  color: black;
+  text-align: center;
+  padding: 14px 20px;
+  text-decoration: none;
+  transition: 0,3s;
+  border: 2px solid transparent;
+}
+
+.knop:hover {
+  background-color: #00FA9A;
+  border: 2px solid white;
+  border-radius: 5px;
+}
+
+.sectie {
+  padding:  10px 20px;
+  min-height: 400px;
+  border-bottom: 1px solid #eee;
+}
+
+.inleiding {
+  background-color: #18eff3;
+  color: black;
+  border: 2px solid black;
+  border-radius: 12px;
+  margin-left: 200px;
+  margin-right: 200px;
+}
+
+.return {
+  font-size: 2em;
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 20px;
+}
+
+.tabbie {
+  background-color: #555;
+  color: white;
+  float: left; 
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  font-size: 17px;
+  width: 25%;
+}
+
+.tabbie:hover {
+  background-color: #777;
+}
+
+.tabbieding {
+  color: white;
+  display: none;
+  padding: 100px 20px;
+  height: 100%;
+}
+
+.blonkie-buiten {
+  max-width: 800px;
+  margin: 40px auto; 
+  text-align: left; 
+}
+
+.informatie-kaart {
+  background: #ffffff;
+  margin-bottom: 15px;
+  border: 2px solid black;
+  border-radius: 15px;
+  overflow: hidden;
+  transition: transform 0.2s; 
+}
+
+.informatie-kaart:hover {
+  transform: scale(1.01);
+}
+
+.blonkie {
+  width: 100%;
+  padding: 20px;
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family:  cursive;
+}
+
+.titel-text {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.badge {
+  background-color: #333;
+  color: white;
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  transition: 0.3s;
+}
+
+.blonkie.active .badge {
+  background-color: #777;
+}
+
+.panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+  background-color: #f9f9f9;
+}
+
+.binnentext {
+  padding: 0 20px 20px 20px;
+  border-top: 1px solid #ddd;
+}
+
+.binnentext p {
+  margin-top: 15px;
+  line-height: 1.5;
+}
+
+.conclusie {
+  background-color: #18eff3;
+  color: black;
+  border: 2px solid black;
+  border-radius: 12px;
+  margin-left: 180px;
+  margin-right: 180px;
+}
+
+.waarde {
+    font-weight: bold;
+}
+
+.heel-goed { 
+  color: #27ae60; 
+}   
+
+.goed { 
+  color: #2ecc71; 
+}    
+
+.matig { 
+  color: #f1c40f; 
+}
+
+.slecht { 
+  color: #e67e22; 
+}
+
+.gevaarlijk { 
+  color: #e74c3c; 
+}    
+
+.opslaan-knop{
+  border: 2px solid black;
+  border-radius: 10px;
+  margin: 10px;
+  font-size: 20px;
+  padding: 5px;
+  background-color:#18eff3;
+}
+
+.modus-kiezen {
+  margin: 10px;
+  border: 2px solid black;
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 5px;
+  cursor: pointer;
+  background-color:#18eff3;
+}
