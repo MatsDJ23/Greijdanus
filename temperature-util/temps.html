@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SysTemp — Hardware Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600&display=swap');
+
+  :root {
+    --gh-bg:        #0d1117;
+    --gh-surface:   #161b22;
+    --gh-border:    #30363d;
+    --gh-border2:   #21262d;
+    --gh-text:      #e6edf3;
+    --gh-muted:     #7d8590;
+    --gh-link:      #58a6ff;
+    --gh-green:     #3fb950;
+    --gh-yellow:    #d29922;
+    --gh-orange:    #db6d28;
+    --gh-red:       #f85149;
+    --gh-accent:    #1f6feb;
+    --gh-accent-bg: #1f6feb22;
+    --gh-pill:      #388bfd1a;
+    --radius:       6px;
+    --radius-lg:    12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--gh-bg);
+    color: var(--gh-text);
+    font-family: 'Geist', -apple-system, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── TOPBAR ── */
+  header {
+    background: var(--gh-surface);
+    border-bottom: 1px solid var(--gh-border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--gh-text);
+    text-decoration: none;
+  }
+  .logo svg { color: var(--gh-text); }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--gh-green);
+    box-shadow: 0 0 6px var(--gh-green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity:1; } 50% { opacity:0.4; }
+  }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gh-muted);
+    background: var(--gh-border2);
+    border: 1px solid var(--gh-border);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 24px;
+  }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gh-text);
+  }
+  .toolbar-left p {
+    font-size: 12px;
+    color: var(--gh-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--gh-border);
+    background: var(--gh-surface);
+    color: var(--gh-text);
+    transition: all .15s ease;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--gh-border2); border-color: var(--gh-muted); }
+  .btn-primary {
+    background: var(--gh-accent);
+    border-color: var(--gh-accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #388bfd; }
+  .btn-danger { border-color: var(--gh-red); color: var(--gh-red); }
+  .btn-danger:hover { background: #f8514922; }
+
+  .btn svg { width:14px; height:14px; }
+
+  .toolbar-right { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── SUMMARY STRIP ── */
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .summary-row-bottom {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .summary-card {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .summary-card.large {
+    padding: 22px 24px;
+  }
+  .summary-card .label {
+    font-size: 11px;
+    color: var(--gh-muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .summary-card .value {
+    font-size: 26px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .summary-card.large .value {
+    font-size: 34px;
+  }
+  .summary-card .sub { font-size: 11px; color: var(--gh-muted); }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--gh-border2);
+  }
+  .section-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gh-text);
+  }
+  .section-header .count {
+    background: var(--gh-border2);
+    border: 1px solid var(--gh-border);
+    color: var(--gh-muted);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 1px 7px;
+    border-radius: 20px;
+  }
+
+  /* ── SENSOR GRID ── */
+  .sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .sensor-card {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    transition: border-color .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .sensor-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--gh-border));
+    transition: background .3s;
+  }
+  .sensor-card:hover { border-color: var(--gh-muted); }
+
+  .sensor-card.alert-warn  { --card-accent: var(--gh-yellow); border-color: var(--gh-yellow)44; }
+  .sensor-card.alert-crit  { --card-accent: var(--gh-red);    border-color: var(--gh-red)44; }
+  .sensor-card.alert-ok    { --card-accent: var(--gh-green); }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+  .card-title { font-weight: 600; font-size: 13px; line-height: 1.3; }
+  .card-adapter { font-size: 11px; color: var(--gh-muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+  .chip {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .chip-cpu    { background:#f785491a; color:var(--gh-orange); border:1px solid var(--gh-orange)44; }
+  .chip-gpu    { background:#58a6ff1a; color:var(--gh-link);   border:1px solid var(--gh-link)44; }
+  .chip-nvme   { background:#3fb9501a; color:var(--gh-green);  border:1px solid var(--gh-green)44; }
+  .chip-ram    { background:#d299221a; color:var(--gh-yellow); border:1px solid var(--gh-yellow)44; }
+  .chip-net    { background:#bc8cff1a; color:#bc8cff;          border:1px solid #bc8cff44; }
+
+  /* readings list */
+  .readings { display: flex; flex-direction: column; gap: 10px; }
+
+  .reading-row { display: flex; flex-direction: column; gap: 4px; }
+
+  .reading-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .reading-name { font-size: 12px; color: var(--gh-muted); font-family: 'JetBrains Mono', monospace; }
+
+  .reading-val {
+    font-size: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+  }
+  .reading-val.ok   { color: var(--gh-green); }
+  .reading-val.warn { color: var(--gh-yellow); }
+  .reading-val.crit { color: var(--gh-red); }
+
+  /* progress bar */
+  .bar-track {
+    height: 4px;
+    background: var(--gh-border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .5s ease, background .3s;
+  }
+  .bar-fill.ok   { background: var(--gh-green); }
+  .bar-fill.warn { background: var(--gh-yellow); }
+  .bar-fill.crit { background: var(--gh-red); }
+
+  .reading-limits { font-size: 10px; color: var(--gh-muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* voltage row (GPU) */
+  .voltage-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .volt-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--gh-accent-bg);
+    border: 1px solid var(--gh-accent)44;
+    color: var(--gh-link);
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+
+  /* ── HISTORY ── */
+  .history-section { margin-bottom: 32px; }
+
+  .history-chart {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+  }
+
+  canvas#histChart {
+    width: 100% !important;
+    max-height: 220px;
+  }
+
+  /* ── ALERTS ── */
+  .alerts-section { margin-bottom: 32px; }
+
+  .alert-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .alert-item {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-left: 3px solid var(--gh-red);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    animation: slide-in .3s ease;
+  }
+  @keyframes slide-in { from { opacity:0; transform:translateY(-6px); } }
+
+  .alert-item.warn { border-left-color: var(--gh-yellow); }
+  .alert-icon { font-size: 16px; flex-shrink: 0; }
+  .alert-text { flex: 1; }
+  .alert-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gh-muted); }
+
+  .no-alerts {
+    background: var(--gh-surface);
+    border: 1px solid var(--gh-border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    color: var(--gh-muted);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--gh-border);
+    padding: 16px 24px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--gh-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── AUTO REFRESH TOGGLE ── */
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gh-muted); }
+  .toggle {
+    position: relative;
+    width: 36px; height: 20px;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0;
+    background: var(--gh-border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: .2s;
+  }
+  .slider::before {
+    content: '';
+    position: absolute;
+    left: 3px; top: 3px;
+    width: 14px; height: 14px;
+    background: white;
+    border-radius: 50%;
+    transition: .2s;
+  }
+  .toggle input:checked + .slider { background: var(--gh-green); }
+  .toggle input:checked + .slider::before { transform: translateX(16px); }
+
+  #refreshInterval {
+    background: var(--gh-border2);
+    border: 1px solid var(--gh-border);
+    color: var(--gh-text);
+    border-radius: var(--radius);
+    padding: 3px 8px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* spinning icon */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinning { animation: spin .7s linear infinite; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <!-- GitHub Octocat-ish icon -->
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+    </svg>
+    SysTemp
+  </a>
+  <div class="badge" id="hostBadge">matsdj09@PC-zorin</div>
+  <div class="header-right">
+    <div class="status-dot" id="statusDot"></div>
+    <span style="font-size:12px;color:var(--gh-muted)" id="lastUpdated">Never updated</span>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <h1>Hardware Temperature Monitor</h1>
+      <p id="sensorCountLine">$ sensors | parsing output…</p>
+    </div>
+    <div class="toolbar-right">
+      <div class="toggle-wrap">
+        <span>Auto</span>
+        <label class="toggle">
+          <input type="checkbox" id="autoToggle" checked>
+          <span class="slider"></span>
+        </label>
+        <select id="refreshInterval">
+          <option value="3000">3s</option>
+          <option value="5000" selected>5s</option>
+          <option value="10000">10s</option>
+          <option value="30000">30s</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="refreshBtn" onclick="doRefresh()">
+        <svg id="refreshIcon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+        </svg>
+        Refresh
+      </button>
+      <button class="btn btn-danger" onclick="clearAlerts()">
+        <svg viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm3.354 4.646a.5.5 0 0 1 0 .708L8.707 9l2.647 2.646a.5.5 0 0 1-.708.708L8 9.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 9 4.646 6.354a.5.5 0 1 1 .708-.708L8 8.293l2.646-2.647a.5.5 0 0 1 .708 0z"/>
+        </svg>
+        Clear Alerts
+      </button>
+    </div>
+  </div>
+
+  <!-- SUMMARY STRIP: 4 top, 3 bottom (larger) -->
+  <div class="summary-strip">
+    <!-- Top row: 4 cards -->
+    <div class="summary-card">
+      <div class="label">CPU Tctl</div>
+      <div class="value" id="sum-cpu" style="color:var(--gh-green)">—</div>
+      <div class="sub">k10temp</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">AMD GPU</div>
+      <div class="value" id="sum-gpu" style="color:var(--gh-link)">—</div>
+      <div class="sub">amdgpu · edge</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">NVMe #1</div>
+      <div class="value" id="sum-nvme1" style="color:var(--gh-green)">—</div>
+      <div class="sub">pci-0200</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">NVMe #2</div>
+      <div class="value" id="sum-nvme2" style="color:var(--gh-green)">—</div>
+      <div class="sub">pci-1000</div>
+    </div>
+    <!-- Bottom row: 3 larger cards -->
+    <div class="summary-row-bottom">
+      <div class="summary-card large">
+        <div class="label">NVIDIA GPU</div>
+        <div class="value" id="sum-nvidia" style="color:var(--gh-green)">—</div>
+        <div class="sub">nvidia-smi</div>
+      </div>
+      <div class="summary-card large">
+        <div class="label">RAM Slot A</div>
+        <div class="value" id="sum-ram1" style="color:var(--gh-yellow)">—</div>
+        <div class="sub">spd5118-53</div>
+      </div>
+      <div class="summary-card large">
+        <div class="label">RAM Slot B</div>
+        <div class="value" id="sum-ram2" style="color:var(--gh-yellow)">—</div>
+        <div class="sub">spd5118-51</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTS -->
+  <div class="alerts-section">
+    <div class="section-header">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--gh-red)">
+        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+      </svg>
+      <h2>Active Alerts</h2>
+      <span class="count" id="alertCount">0</span>
+    </div>
+    <div class="alert-list" id="alertList">
+      <div class="no-alerts">✅ All temperatures within normal range</div>
+    </div>
+  </div>
+
+  <!-- SENSOR CARDS -->
+  <div class="section-header">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--gh-muted)">
+      <path d="M9.5 2a.5.5 0 0 1 0 1h-3a.5.5 0 0 1 0-1h3zM8 6a.5.5 0 0 1 .5.5v4.5h1a.5.5 0 0 1 0 1h-3a.5.5 0 0 1 0-1h1V7H7a.5.5 0 0 1-.5-.5V6A.5.5 0 0 1 7 5.5h.5V6a.5.5 0 0 1 .5-.5V6z"/>
+      <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8z"/>
+    </svg>
+    <h2>All Sensors</h2>
+    <span class="count" id="sensorCount">0</span>
+  </div>
+  <div class="sensor-grid" id="sensorGrid">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- HISTORY CHART -->
+  <div class="history-section">
+    <div class="section-header">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--gh-muted)">
+        <path d="M0 0h1v15h15v1H0V0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5z"/>
+      </svg>
+      <h2>Temperature History</h2>
+      <span class="count" id="histCount">0 pts</span>
+    </div>
+    <div class="history-chart">
+      <canvas id="histChart"></canvas>
+    </div>
+  </div>
+</main>
+
+<footer>
+  SysTemp v1.0 — reads <code>sensors</code> via local fetch proxy &nbsp;·&nbsp; GitHub Dark Theme &nbsp;·&nbsp; matsdj09@PC-zorin
+</footer>
+
+<!-- Lightweight chart (Chart.js from CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ─────────────────────────────────────────────
+// SENSOR DEFINITIONS  (what we know from your output)
+// ─────────────────────────────────────────────
+const SENSOR_META = {
+  'k10temp':   { label:'AMD CPU',      chip:'CPU',   chipClass:'chip-cpu',  icon:'🔴' },
+  'amdgpu':    { label:'AMD GPU',      chip:'GPU',   chipClass:'chip-gpu',  icon:'🔵' },
+  'nvidia':    { label:'NVIDIA GPU',   chip:'GPU',   chipClass:'chip-gpu',  icon:'🟩' },
+  'nvme-pci-0200': { label:'NVMe SSD #1', chip:'NVMe', chipClass:'chip-nvme', icon:'🟢' },
+  'nvme-pci-1000': { label:'NVMe SSD #2', chip:'NVMe', chipClass:'chip-nvme', icon:'🟢' },
+  'spd5118-i2c-6-53': { label:'RAM Slot A (DDR5)', chip:'RAM', chipClass:'chip-ram', icon:'🟡' },
+  'spd5118-i2c-6-51': { label:'RAM Slot B (DDR5)', chip:'RAM', chipClass:'chip-ram', icon:'🟡' },
+  'r8169_0_900:00-mdio-0': { label:'Network (r8169)', chip:'NET', chipClass:'chip-net', icon:'🟣' },
+};
+
+// ─────────────────────────────────────────────
+// PARSE `sensors` output  (line-by-line, robust)
+// ─────────────────────────────────────────────
+function parseSensors(raw) {
+  const lines = raw.split('\n');
+  const result = [];
+  let current = null;
+
+  // A sensor block header: non-empty, not indented, not "Adapter:", not a reading line
+  const isHeader = l => l.length > 0 && !/^\s/.test(l) && !l.startsWith('Adapter:') && !/^[\w\s]+:\s*[+\-]?[\d]/.test(l);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Blank line — skip
+    if (!trimmed) continue;
+
+    // New block header (e.g. "k10temp-pci-00c3")
+    if (isHeader(line)) {
+      if (current) result.push(current);
+      current = { name: trimmed, adapter: '?', readings: [], voltages: [] };
+      continue;
+    }
+
+    if (!current) continue;
+
+    // Adapter line
+    if (trimmed.startsWith('Adapter:')) {
+      current.adapter = trimmed.replace('Adapter:', '').trim();
+      continue;
+    }
+
+    // Continuation / limit-only line — extract crit/high for last reading
+    if (/^\s*\(/.test(line)) {
+      const last = current.readings[current.readings.length - 1];
+      if (last) {
+        if (!last.crit) {
+          const m = trimmed.match(/crit\s*=\s*[+\-]?([\d.]+)°C/);
+          if (m) last.crit = parseFloat(m[1]);
+        }
+        if (!last.high) {
+          const m = trimmed.match(/high\s*=\s*[+\-]?([\d.]+)°C/);
+          if (m) { const h = parseFloat(m[1]); if (h < 200) last.high = h; }
+        }
+      }
+      continue;
+    }
+
+    // Temperature reading line
+    const tempM = trimmed.match(/^([\w][^:]+?):\s*[+\-]?([\d.]+)°C(.*)/);
+    if (tempM) {
+      const name = tempM[1].trim();
+      const val  = parseFloat(tempM[2]);
+      const rest = tempM[3];
+      const highM = rest.match(/high\s*=\s*[+\-]?([\d.]+)°C/);
+      let high = highM ? parseFloat(highM[1]) : null;
+      if (high && high > 200) high = null;
+      const critM = rest.match(/crit\s*=\s*[+\-]?([\d.]+)°C/);
+      const crit = critM ? parseFloat(critM[1]) : null;
+      current.readings.push({ type: 'temp', name, val, high, crit });
+      continue;
+    }
+
+    // Voltage line
+    const voltM = trimmed.match(/^([\w][^:]+?):\s*([\d.]+)\s*V$/);
+    if (voltM) {
+      current.voltages.push({ name: voltM[1].trim(), val: parseFloat(voltM[2]) });
+      continue;
+    }
+
+    // Power line
+    const pwrM = trimmed.match(/^(PPT|power[\w]*):\s*([\d.]+)\s*(mW|W)/);
+    if (pwrM) {
+      current.voltages.push({ name: pwrM[1], val: parseFloat(pwrM[2]), unit: pwrM[3] });
+    }
+  }
+
+  if (current) result.push(current);
+  return result;
+}
+
+// ─────────────────────────────────────────────
+// COLOUR CODING
+// ─────────────────────────────────────────────
+function tempClass(val, high, crit) {
+  if (crit && val >= crit * 0.9) return 'crit';
+  if (high && val >= high * 0.75) return 'warn';
+  return 'ok';
+}
+
+function pct(val, high, crit) {
+  const max = crit || high || 85;
+  return Math.min(100, Math.max(0, (val / max) * 100)).toFixed(1);
+}
+
+// ─────────────────────────────────────────────
+// RENDER CARDS
+// ─────────────────────────────────────────────
+function renderCards(sensors) {
+  const grid = document.getElementById('sensorGrid');
+  grid.innerHTML = '';
+  document.getElementById('sensorCount').textContent = sensors.length;
+
+  let alerts = [];
+
+  sensors.forEach(sensor => {
+    const metaKey = Object.keys(SENSOR_META).find(k => sensor.name.startsWith(k)) || sensor.name;
+    const meta = SENSOR_META[metaKey] || { label: sensor.name, chip:'???', chipClass:'chip-net', icon:'⚪' };
+
+    // Determine card alert class
+    let cardClass = 'alert-ok';
+    sensor.readings.forEach(r => {
+      if (r.type === 'temp') {
+        const c = tempClass(r.val, r.high, r.crit);
+        if (c === 'crit') { cardClass = 'alert-crit'; alerts.push({ lvl:'crit', sensor: meta.label, name: r.name, val: r.val, time: new Date().toLocaleTimeString() }); }
+        else if (c === 'warn' && cardClass !== 'alert-crit') { cardClass = 'alert-warn'; alerts.push({ lvl:'warn', sensor: meta.label, name: r.name, val: r.val, time: new Date().toLocaleTimeString() }); }
+      }
+    });
+
+    let readingsHTML = sensor.readings.filter(r=>r.type==='temp').map(r => {
+      const cls = tempClass(r.val, r.high, r.crit);
+      const p = pct(r.val, r.high, r.crit);
+      const highLabel = r.high && r.high > 0 ? `${r.high}°C` : '—';
+      const critLabel = r.crit ? ` / ${r.crit}°C crit` : '';
+      return `
+        <div class="reading-row">
+          <div class="reading-meta">
+            <span class="reading-name">${r.name}</span>
+            <span class="reading-val ${cls}">${r.val.toFixed(1)}°C</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill ${cls}" style="width:${p}%"></div></div>
+          <div class="reading-limits">high ${highLabel}${critLabel}</div>
+        </div>`;
+    }).join('');
+
+    let voltHTML = '';
+    if (sensor.voltages.length) {
+      voltHTML = '<div class="voltage-row">' + sensor.voltages.map(v =>
+        `<span class="volt-pill">${v.name}: ${v.val.toFixed(2)}${v.unit||'V'}</span>`
+      ).join('') + '</div>';
+    }
+
+    grid.innerHTML += `
+      <div class="sensor-card ${cardClass}">
+        <div class="card-header">
+          <div>
+            <div class="card-title">${meta.icon} ${meta.label}</div>
+            <div class="card-adapter">${sensor.name}</div>
+          </div>
+          <span class="chip ${meta.chipClass}">${meta.chip}</span>
+        </div>
+        <div class="readings">${readingsHTML}${voltHTML}</div>
+      </div>`;
+  });
+
+  renderAlerts(alerts);
+  updateSummary(sensors);
+}
+
+// ─────────────────────────────────────────────
+// ALERTS
+// ─────────────────────────────────────────────
+let allAlerts = [];
+function renderAlerts(newAlerts) {
+  allAlerts = [...allAlerts, ...newAlerts].slice(-20);
+  const list = document.getElementById('alertList');
+  const count = document.getElementById('alertCount');
+  if (!allAlerts.length) {
+    list.innerHTML = '<div class="no-alerts">✅ All temperatures within normal range</div>';
+    count.textContent = '0';
+    return;
+  }
+  count.textContent = allAlerts.length;
+  list.innerHTML = allAlerts.slice().reverse().map(a => `
+    <div class="alert-item ${a.lvl}">
+      <span class="alert-icon">${a.lvl === 'crit' ? '🔴' : '⚠️'}</span>
+      <span class="alert-text"><strong>${a.sensor}</strong> — ${a.name}: <strong>${a.val.toFixed(1)}°C</strong></span>
+      <span class="alert-time">${a.time}</span>
+    </div>`).join('');
+}
+function clearAlerts() { allAlerts = []; renderAlerts([]); }
+
+// ─────────────────────────────────────────────
+// SUMMARY STRIP
+// ─────────────────────────────────────────────
+function updateSummary(sensors) {
+  // Match by prefix so 'k10temp-pci-00c3' is found by 'k10temp'
+  const find = (prefix) => sensors.find(s => s.name.startsWith(prefix));
+  const findReading = (s, rname) => s?.readings.find(r => r.type==='temp' && r.name.toLowerCase() === rname.toLowerCase());
+  const firstTemp = (s) => s?.readings.find(r => r.type==='temp')?.val;
+
+  const setSum = (id, s, rname) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const reading = rname ? findReading(s, rname) : null;
+    const v = reading?.val ?? firstTemp(s);
+    if (v == null) { el.textContent = '—'; return; }
+    el.textContent = v.toFixed(1) + '°C';
+    const r = reading || s?.readings.find(r => r.type==='temp');
+    const cls = tempClass(v, r?.high, r?.crit);
+    el.style.color = cls === 'ok' ? 'var(--gh-green)' : cls === 'warn' ? 'var(--gh-yellow)' : 'var(--gh-red)';
+  };
+
+  setSum('sum-cpu',    find('k10temp'),          'Tctl');
+  setSum('sum-gpu',    find('amdgpu'),           'edge');
+  setSum('sum-nvidia', find('nvidia'),           null);
+  setSum('sum-nvme1',  find('nvme-pci-0200'),    'Composite');
+  setSum('sum-nvme2',  find('nvme-pci-1000'),    'Composite');
+  setSum('sum-ram1',   find('spd5118-i2c-6-53'), 'temp1');
+  setSum('sum-ram2',   find('spd5118-i2c-6-51'), 'temp1');
+}
+
+// ─────────────────────────────────────────────
+// HISTORY CHART
+// ─────────────────────────────────────────────
+const MAX_HIST = 40;
+const history = { labels: [], datasets: {} };
+let chart;
+
+const HIST_COLORS = {
+  'k10temp':           '#f85149',
+  'amdgpu':            '#58a6ff',
+  'nvidia':            '#76b900',
+  'nvme-pci-0200':     '#3fb950',
+  'nvme-pci-1000':     '#56d364',
+  'spd5118-i2c-6-53':  '#d29922',
+  'spd5118-i2c-6-51':  '#e3b341',
+  'r8169_0_900:00-mdio-0': '#bc8cff',
+};
+
+function initChart() {
+  const ctx = document.getElementById('histChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#7d8590',
+            font: { family: "'JetBrains Mono', monospace", size: 11 },
+            boxWidth: 12,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#161b22',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#7d8590',
+          titleFont: { family: "'JetBrains Mono', monospace" },
+          bodyFont:  { family: "'JetBrains Mono', monospace" },
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}°C` }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#7d8590', font: { family: "'JetBrains Mono', monospace", size: 10 } }, grid: { color: '#21262d' } },
+        y: {
+          ticks: { color: '#7d8590', font: { family: "'JetBrains Mono', monospace", size: 10 }, callback: v => v + '°C' },
+          grid: { color: '#21262d' },
+          min: 20, max: 90,
+        }
+      }
+    }
+  });
+}
+
+function updateHistory(sensors) {
+  const now = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  if (history.labels.length >= MAX_HIST) history.labels.shift();
+  history.labels.push(now);
+
+  sensors.forEach(s => {
+    const v = s.readings.find(r => r.type === 'temp')?.val;
+    if (v == null) return;
+    if (!history.datasets[s.name]) history.datasets[s.name] = [];
+    if (history.datasets[s.name].length >= MAX_HIST) history.datasets[s.name].shift();
+    history.datasets[s.name].push(v);
+  });
+
+  const meta = SENSOR_META;
+  chart.data.labels = [...history.labels];
+  chart.data.datasets = Object.entries(history.datasets).map(([name, data]) => {
+    const metaKey = Object.keys(meta).find(k => name.startsWith(k)) || name;
+    return {
+      label: meta[metaKey]?.label || name,
+      data: [...data],
+      borderColor: HIST_COLORS[metaKey] || HIST_COLORS[name] || '#ffffff',
+      backgroundColor: (HIST_COLORS[metaKey] || HIST_COLORS[name] || '#ffffff') + '18',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.4,
+      fill: false,
+    };
+  });
+  chart.update('none');
+  document.getElementById('histCount').textContent = history.labels.length + ' pts';
+}
+
+// ─────────────────────────────────────────────
+// DATA FETCHING
+// ─────────────────────────────────────────────
+// Since this runs as a local file, we use the local proxy approach.
+// The page tries to POST to localhost:27182 (a tiny helper you can run).
+// If unavailable, it falls back to demo data so the UI still works.
+
+const PROXY_URL = 'http://localhost:27182/sensors';
+
+async function fetchSensors() {
+  try {
+    const res = await fetch(PROXY_URL, { method: 'GET', signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error('proxy error');
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// DEMO / FALLBACK DATA  (realistic simulation)
+// ─────────────────────────────────────────────
+let demoState = {
+  nvidia_gpu: 52.0,
+  k10temp_tctl: 39.5,
+  k10temp_tccd1: 28.5,
+  gpu_edge: 33.0,
+  nvme1_comp: 37.9,
+  nvme1_s1: 37.9,
+  nvme1_s2: 38.9,
+  nvme2_comp: 22.9,
+  nvme2_s1: 22.9,
+  ram1: 33.0,
+  ram2: 35.0,
+  net: 35.5,
+  gpu_ppt: 8.0,
+};
+
+function nudge(v, min, max, delta=0.5) {
+  return Math.max(min, Math.min(max, v + (Math.random()-0.48)*delta));
+}
+
+function generateDemoRaw() {
+  const d = demoState;
+  d.nvidia_gpu    = nudge(d.nvidia_gpu, 40, 85, 2.0);
+  d.k10temp_tctl  = nudge(d.k10temp_tctl, 30, 75, 1.5);
+  d.k10temp_tccd1 = nudge(d.k10temp_tccd1, 22, 65, 1.0);
+  d.gpu_edge      = nudge(d.gpu_edge, 28, 85, 1.0);
+  d.nvme1_comp    = nudge(d.nvme1_comp, 30, 70, 0.5);
+  d.nvme1_s1      = d.nvme1_comp + nudge(0, -1, 1);
+  d.nvme1_s2      = d.nvme1_comp + nudge(0, -1, 2);
+  d.nvme2_comp    = nudge(d.nvme2_comp, 18, 60, 0.3);
+  d.nvme2_s1      = d.nvme2_comp;
+  d.ram1          = nudge(d.ram1, 28, 52, 0.4);
+  d.ram2          = nudge(d.ram2, 29, 52, 0.4);
+  d.net           = nudge(d.net, 28, 55, 0.3);
+  d.gpu_ppt       = nudge(d.gpu_ppt, 4, 80, 3);
+
+  return `spd5118-i2c-6-53
+Adapter: SMBus PIIX4 adapter port 0 at 0b00
+temp1:        +${d.ram1.toFixed(1)}°C  (low  =  +0.0°C, high = +55.0°C)
+               (crit low =  +0.0°C, crit = +85.0°C)
+nvme-pci-0200
+Adapter: PCI adapter
+Composite:    +${d.nvme1_comp.toFixed(1)}°C  (low  = -273.1°C, high = +81.8°C)
+               (crit = +84.8°C)
+Sensor 1:     +${d.nvme1_s1.toFixed(1)}°C  (low  = -273.1°C, high = +65261.8°C)
+Sensor 2:     +${d.nvme1_s2.toFixed(1)}°C  (low  = -273.1°C, high = +65261.8°C)
+r8169_0_900:00-mdio-0
+Adapter: MDIO adapter
+temp1:        +${d.net.toFixed(1)}°C  (high = +120.0°C)
+amdgpu-pci-1100
+Adapter: PCI adapter
+vddgfx:        1.04 V
+vddnb:         1.24 V
+edge:         +${d.gpu_edge.toFixed(1)}°C
+PPT:           ${d.gpu_ppt.toFixed(2)} mW
+spd5118-i2c-6-51
+Adapter: SMBus PIIX4 adapter port 0 at 0b00
+temp1:        +${d.ram2.toFixed(1)}°C  (low  =  +0.0°C, high = +55.0°C)
+               (crit low =  +0.0°C, crit = +85.0°C)
+nvidia-smi-virtual-0
+Adapter: Virtual device
+GPU Core:     +${d.nvidia_gpu.toFixed(1)}°C  (high = +83.0°C)
+               (crit = +90.0°C)
+k10temp-pci-00c3
+Adapter: PCI adapter
+Tctl:         +${d.k10temp_tctl.toFixed(1)}°C
+Tccd1:        +${d.k10temp_tccd1.toFixed(1)}°C
+nvme-pci-1000
+Adapter: PCI adapter
+Composite:    +${d.nvme2_comp.toFixed(1)}°C  (low  = -20.1°C, high = +82.8°C)
+               (crit = +84.8°C)
+Sensor 1:     +${d.nvme2_s1.toFixed(1)}°C  (low  = -273.1°C, high = +65261.8°C)`;
+}
+
+// ─────────────────────────────────────────────
+// MAIN REFRESH LOOP
+// ─────────────────────────────────────────────
+let usingProxy = false;
+let intervalId = null;
+
+async function doRefresh() {
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('spinning');
+
+  let raw = await fetchSensors();
+  if (raw) {
+    usingProxy = true;
+    document.getElementById('hostBadge').textContent = 'matsdj09@PC-zorin [LIVE]';
+  } else {
+    raw = generateDemoRaw();
+    document.getElementById('hostBadge').textContent = 'matsdj09@PC-zorin [demo]';
+  }
+
+  const sensors = parseSensors(raw);
+  renderCards(sensors);
+  updateHistory(sensors);
+
+  const now = new Date().toLocaleTimeString();
+  document.getElementById('lastUpdated').textContent = 'Updated ' + now;
+  document.getElementById('sensorCountLine').textContent =
+    `$ sensors — ${sensors.length} adapters detected`;
+
+  setTimeout(() => icon.classList.remove('spinning'), 400);
+}
+
+function startInterval() {
+  if (intervalId) clearInterval(intervalId);
+  const ms = parseInt(document.getElementById('refreshInterval').value);
+  intervalId = setInterval(doRefresh, ms);
+}
+
+document.getElementById('autoToggle').addEventListener('change', function() {
+  if (this.checked) startInterval();
+  else { clearInterval(intervalId); intervalId = null; }
+});
+
+document.getElementById('refreshInterval').addEventListener('change', () => {
+  if (document.getElementById('autoToggle').checked) startInterval();
+});
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+initChart();
+doRefresh();
+startInterval();
+</script>
+
+<!-- PROXY INSTRUCTIONS (shown as comment in source) -->
+<!--
+  To get LIVE data, run this tiny one-liner in a terminal:
+  
+  while true; do python3 -c "
+import http.server, subprocess, json
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        out = subprocess.check_output(['sensors']).decode()
+        self.send_response(200)
+        self.send_header('Content-Type','text/plain')
+        self.send_header('Access-Control-Allow-Origin','*')
+        self.end_headers()
+        self.wfile.write(out.encode())
+    def log_message(self,*a): pass
+http.server.HTTPServer(('localhost',27182),H).serve_forever()
+"; done
+
+  Then open this HTML file in your browser. The dashboard will show live temps!
+  Without the proxy, it runs with a realistic simulation of your sensors.
+-->
+</body>
+</html>
